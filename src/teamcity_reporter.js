@@ -56,6 +56,8 @@
             totalSpecsFailed = 0,
             totalSpecsDefined;
 
+        self.logItems = new Array();
+
         var __suites = {}, __specs = {};
         function getSuite(suite) {
             __suites[suite.id] = extend(__suites[suite.id] || {}, suite);
@@ -70,43 +72,43 @@
             totalSpecsDefined = summary && summary.totalSpecsDefined || NaN;
             exportObject.startTime = new Date();
             self.started = true;
-            tclog("progressStart 'Running Jasmine Tests'");
+            self.logItems.push(tclog("progressStart 'Running Jasmine Tests'"));
         };
         self.suiteStarted = function(suite) {
             suite = getSuite(suite);
             suite._parent = currentSuite;
             currentSuite = suite;
-            tclog("testSuiteStarted", {
+            self.logItems.push(tclog("testSuiteStarted", {
                 name: suite.description
-            });
+            }));
         };
         self.specStarted = function(spec) {
             spec = getSpec(spec);
-            tclog("testStarted", {
+            self.logItems.push(tclog("testStarted", {
                 name: spec.description,
                 captureStandardOutput: 'true'
-            });
+            }));
         };
         self.specDone = function(spec) {
             spec = getSpec(spec);
             if (isSkipped(spec)) {
-                tclog("testIgnored", {
+                self.logItems.push(tclog("testIgnored", {
                     name: spec.description
-                });
+                }));
             }
             // TeamCity specifies there should only be a single `testFailed`
             // message, so we'll only grab the first failedExpectation
             if (isFailed(spec) && spec.failedExpectations.length) {
                 var failure = spec.failedExpectations[0];
-                tclog("testFailed", {
+                self.logItems.push(tclog("testFailed", {
                     name: spec.description,
                     message: failure.message,
                     details: failure.stack
-                });
+                }));
             }
-            tclog("testFinished", {
+            self.logItems.push(tclog("testFinished", {
                 name: spec.description
-            });
+            }));
         };
         self.suiteDone = function(suite) {
             suite = getSuite(suite);
@@ -115,13 +117,13 @@
                 self.suiteStarted(suite);
                 suite._disabled = true;
             }
-            tclog("testSuiteFinished", {
+            self.logItems.push(tclog("testSuiteFinished", {
                 name: suite.description
-            });
+            }));
             currentSuite = suite._parent;
         };
         self.jasmineDone = function() {
-            tclog("progressFinish 'Running Jasmine Tests'");
+            self.logItems.push(tclog("progressFinish 'Running Jasmine Tests'"));
 
             self.finished = true;
             // this is so phantomjs-testrunner.js can tell if we're done executing
@@ -144,6 +146,7 @@
         }
         str += "]";
         log(str);
+        return str;
     }
     function escapeTeamCityString(str) {
         if(!str) {
